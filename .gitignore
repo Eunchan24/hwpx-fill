@@ -1,0 +1,20 @@
+# Reference skill (not part of this project)
+ref/
+
+# OMC state
+.omc/
+
+# Output files
+output/*.hwpx
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+*.tmp
