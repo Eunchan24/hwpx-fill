@@ -7,143 +7,42 @@ description: "HWPX 한글 양식에 인터랙티브하게 내용을 채워넣는
 
 $ARGUMENTS
 
-## 개요
+이 명령은 `skill/hwpx-fill/` Agent Skill의 Claude Code 진입점이다.
 
-HWPX 양식 파일(.hwpx)의 **원본 구조·서식·레이아웃을 100% 보존**하면서 텍스트만 인터랙티브하게 채워넣는 도구.
-ZIP 내부 XML의 텍스트를 직접 치환하므로 표, 결재란, 색상, 폰트 등 모든 서식 요소가 그대로 유지된다.
+## 도구 경로
+
+스킬 디렉토리: `skill/hwpx-fill/`
+통합 스크립트: `skill/hwpx-fill/scripts/hwpx_tool.py`
+기본 양식: `skill/hwpx-fill/assets/report-template.hwpx`
 
 ## 선행 조건
 
-python-hwpx 라이브러리가 필요하다. 없으면 먼저 설치:
 ```bash
 pip3 install python-hwpx --break-system-packages
 ```
 
-## 워크플로우 (4단계)
+## 워크플로우
 
-### Phase 1: 양식 분석
+`skill/hwpx-fill/SKILL.md`의 4단계 워크플로우를 따른다:
 
-사용자가 HWPX 파일 경로를 제공하면 (인자 또는 대화에서) 분석 스크립트를 실행한다:
+1. **Phase 1 (분석)**: `python3 skill/hwpx-fill/scripts/hwpx_tool.py analyze <template.hwpx>`
+2. **Phase 2 (값 수집)**: 분석 결과를 표로 보여주고 사용자에게 값 수집
+3. **Phase 3 (확인)**: 치환 매핑 전체를 보여주고 사용자 승인
+4. **Phase 4 (실행)**: `python3 skill/hwpx-fill/scripts/hwpx_tool.py fill <src> <dst> <json>`
 
+실행 후 미리보기:
 ```bash
-python3 scripts/analyze_template.py <template.hwpx> --format md
+python3 skill/hwpx-fill/scripts/hwpx_tool.py preview <output.hwpx>
 ```
 
-이 스크립트는 양식 내 모든 텍스트를 추출하고 분류한다:
-- **단일 치환 항목**: 한 번만 나오는 텍스트 (기관명, 제목, 날짜 등)
-- **순차 치환 항목**: 동일 텍스트가 N번 반복되는 것 (본문 □, ○, ― 항목 등)
-- **문서 구조**: 문단 순서대로 전체 텍스트 목록
+## 출력 경로
 
-### Phase 2: 인터랙티브 값 수집
-
-분석 결과를 마크다운으로 정리해서 사용자에게 보여준다.
-사용자가 이해하기 쉽게 **위치별로 그룹핑**하여 표시:
-
-```markdown
-## 양식 채우기
-
-### [표지]
-| # | 현재 내용 | 바꿀 내용 |
-|---|----------|----------|
-| 1 | "브라더 공기관" | ? |
-| 2 | "기본 보고서 양식" | ? |
-| 3 | "2024. 5. 23." | ? |
-
-### [본문] □ 항목 (8개 — 각각 다른 내용)
-각 □ 자리에 들어갈 내용을 알려주세요.
-
-### [본문] ○ 항목 (8개)
-각 ○ 자리에 들어갈 내용을 알려주세요.
-```
-
-**값 수집 규칙:**
-1. 사용자가 자연어로 답하면 파싱해서 매핑한다
-   - "기관명은 팀워크, 제목은 AI 도입 보고서" → 자동 매핑
-2. 한번에 여러 값 OK, 부분 입력도 OK
-   - "표지만 먼저 채워줘. 본문은 나중에"
-3. "AI가 알아서 채워줘" 요청 시 주제/맥락 기반으로 자동 생성
-4. 빈 값은 원본 유지 (치환 안 함)
-5. 순차 치환은 순서대로 값이 필요함을 명확히 안내
-
-### Phase 3: 확인
-
-모든 값 수집이 끝나면 최종 확인표를 보여준다:
-
-```markdown
-## 치환 확인
-
-### 단일 치환
-| 원본 | → | 새 값 |
-|------|---|-------|
-| "브라더 공기관" | → | "팀워크" |
-| "기본 보고서 양식" | → | "AI 도입 현황 보고서" |
-
-### 순차 치환
-**□ 항목 (8개):**
-1. "AI 기술 도입 현황 분석"
-2. "전년 대비 도입률 23% 증가"
-...
-
-이대로 진행할까요?
-```
-
-**사용자 확인을 반드시 받은 후에만** 다음 단계로 진행한다.
-
-### Phase 4: 실행
-
-확인 받으면:
-
-1. `replacements.json` 임시 파일 생성 (Write tool)
-2. `fill_template.py` 실행
-3. 임시 파일 정리
-4. 출력 경로 안내
-
-```bash
-# replacements.json은 Write tool로 생성한 후:
-python3 scripts/fill_template.py <source.hwpx> <output.hwpx> /tmp/hwpx_replacements.json --verify
-rm /tmp/hwpx_replacements.json
-```
-
-**출력 경로 규칙:**
-- 사용자가 지정하면 해당 경로 사용
-- 미지정 시: `<원본이름>_filled.hwpx` (원본과 같은 디렉토리)
-- `output/` 디렉토리가 있으면 거기에 생성
-
-**replacements.json 형식:**
-```json
-{
-  "single": {
-    "브라더 공기관": "팀워크",
-    "기본 보고서 양식": "AI 도입 현황 보고서"
-  },
-  "sequential": {
-    "헤드라인M 폰트 16포인트(문단 위 15)": [
-      "AI 기술 도입 현황 분석",
-      "전년 대비 도입률 23% 증가"
-    ]
-  }
-}
-```
+- 사용자 지정 → 해당 경로
+- 미지정 → `output/<원본이름>_filled.hwpx`
 
 ## 핵심 규칙
 
-1. **원본 파일은 절대 수정하지 않는다** — 항상 복사본에서 작업 (fill_template.py가 자동 복사)
-2. **네임스페이스 후처리는 자동** — fill_template.py에 내장됨
-3. **날짜 형식**: 한글 공문서 날짜는 `2026. 3. 23.` (월·일 앞 0 생략, 온점 사이 공백)
-4. **순차 치환 주의**: 같은 텍스트가 N번 나오면 N개의 다른 값이 필요. 값이 부족하면 나머지는 원본 유지
-5. **HwpxDocument.open() 사용 금지** — 복잡한 양식 파싱 실패 가능. ZIP-level 치환만 사용
-
-## 에러 처리
-
-- python-hwpx 미설치 → `pip3 install python-hwpx --break-system-packages` 안내
-- 파일을 찾을 수 없음 → 경로 확인 요청
-- 치환 결과에 원본 플레이스홀더가 남아있음 → 어떤 항목이 치환 안 됐는지 알려줌
-- HWPX가 아닌 파일 → HWPX 파일(.hwpx)만 지원한다고 안내
-
-## 사용 예시
-
-```
-/hwpx-fill ./templates/report-template.hwpx
-/hwpx-fill ~/Desktop/우리양식.hwpx
-/hwpx-fill (파일 경로를 대화에서 제공)
-```
+- 원본 파일 수정 금지 (fill이 자동으로 src → dst 복사)
+- 날짜: `2026. 3. 23.` (월/일 앞 0 생략)
+- 사용자 확인 없이 치환 실행 금지
+- 상세 규칙은 `skill/hwpx-fill/SKILL.md` 참조

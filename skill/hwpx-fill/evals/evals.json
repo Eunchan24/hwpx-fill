@@ -1,0 +1,82 @@
+{
+  "skill_name": "hwpx-fill",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "한글로 간단한 공문서를 작성해줘. 내용은 '2026년도 정보화 교육 실시 안내'이고, 일시는 2026. 3. 10.(화) 14:00~16:00, 장소는 본관 대회의실, 대상은 전 직원이야.",
+      "expected_output": "공문서 형식의 .hwpx 파일",
+      "files": [],
+      "assertions": [
+        "출력 파일이 .hwpx 확장자를 가진다",
+        "공문서 항목 기호 체계(1. 가. 1) ...)를 사용한다",
+        "날짜가 '2026. 3. 10.(화)' 형식이다 (월/일 앞 0 없음)",
+        "시간이 24시각제 '14:00~16:00' 형식이다",
+        "'끝.' 표시가 포함되어 있다",
+        "hwpx_tool.py fix 또는 fill의 NS 후처리가 실행되었다"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "보고서 양식으로 한글 문서를 작성해줘. 제목은 '2026년 상반기 AI 도입 현황 보고'이고, 섹션은 Ⅰ. 추진 배경, Ⅱ. 현황 분석, Ⅲ. 개선 방안 3개로 구성해줘.",
+      "expected_output": "보고서 형식의 .hwpx 파일 (템플릿 기반)",
+      "files": [],
+      "assertions": [
+        "assets/report-template.hwpx 템플릿을 사용한다",
+        "hwpx_tool.py analyze로 양식을 먼저 분석한다",
+        "표지에 보고서 제목이 포함되어 있다",
+        "섹션 구분 바의 제목 텍스트가 치환되었다",
+        "본문에 □○― 기호 체계가 사용된다",
+        "hwpx_tool.py fill로 단일 패스 치환이 실행되었다"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "이 한글 파일을 열어서 표지 제목을 '디지털 전환 추진 계획'으로 바꾸고, 작성일을 오늘 날짜로 변경해줘.",
+      "expected_output": "수정된 .hwpx 파일",
+      "files": ["assets/report-template.hwpx"],
+      "assertions": [
+        "사용자 업로드 파일을 템플릿으로 사용한다",
+        "hwpx_tool.py analyze로 텍스트를 먼저 조사한다",
+        "hwpx_tool.py fill로 치환을 실행한다",
+        "표지 제목이 변경되었다",
+        "작성일이 공문서 날짜 형식(2026. 3. 23.)으로 변경되었다"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "이 양식 파일을 분석해서 어떤 항목을 채울 수 있는지 알려줘.",
+      "expected_output": "양식 분석 결과 (단일/순차 분류)",
+      "files": ["assets/report-template.hwpx"],
+      "assertions": [
+        "hwpx_tool.py analyze를 실행한다",
+        "단일 치환 항목과 순차 치환 항목을 구분하여 보여준다",
+        "순차 항목의 반복 횟수를 표시한다",
+        "사용자 친화적인 그룹핑(표지/본문/목차 등)으로 정리한다"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "보고서 양식에서 □ 항목 8개를 순서대로 채워줘. 내용은: 1.사업 개요, 2.추진 경과, 3.현황 분석, 4.문제점 도출, 5.개선 방안, 6.기대 효과, 7.향후 계획, 8.건의 사항",
+      "expected_output": ".hwpx 파일에서 □ 항목이 순서대로 치환됨",
+      "files": ["assets/report-template.hwpx"],
+      "assertions": [
+        "hwpx_tool.py fill의 sequential 치환이 사용된다",
+        "8개 □ 항목이 제공된 순서대로 정확히 치환된다",
+        "다른 항목(○, ―, ※)은 영향받지 않는다",
+        "hwpx_tool.py preview로 결과를 미리보기 제공한다"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "이 한글 파일의 내용을 미리보기로 보여줘.",
+      "expected_output": "Markdown 형태의 문서 미리보기",
+      "files": ["assets/report-template.hwpx"],
+      "assertions": [
+        "hwpx_tool.py preview를 실행한다",
+        "문서 구조(섹션, 계층)가 Markdown으로 표현된다",
+        "□○―※ 기호 체계가 계층적으로 표시된다",
+        ".hwpx 파일을 다운로드하지 않고도 내용 확인이 가능하다"
+      ]
+    }
+  ]
+}
